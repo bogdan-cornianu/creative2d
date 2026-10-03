@@ -1,0 +1,51 @@
+[project]
+name = "creative2d"
+version = "0.1.0"
+description = "Local pipeline for generating 2D game assets (sprites, tiles, atlases) for Phaser"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.8",
+    "pillow>=10.4",
+    "numpy>=1.26",
+    "scipy>=1.13",
+    "httpx>=0.27",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+ml = [
+    "torch>=2.5",
+    "torchvision>=0.20",
+    "diffusers>=0.33",
+    "transformers>=4.46",
+    "accelerate>=1.0",
+    "peft>=0.13",
+    "safetensors>=0.4",
+    "sentencepiece>=0.2",
+    "ftfy>=6.2",  # Wan pipelines clean prompts with it
+    "protobuf>=4.25",  # transformers needs it to convert T5 sentencepiece tokenizers (LTX, Wan)
+    "timm>=1.0",
+    "kornia>=0.7",
+    "einops>=0.8",
+    "opencv-python-headless>=4.10",
+    "imageio[ffmpeg]>=2.35",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.3"]
+
+[project.scripts]
+creative2d = "creative2d.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend/creative2d"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]

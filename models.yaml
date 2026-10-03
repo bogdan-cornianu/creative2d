@@ -1,0 +1,89 @@
+# Model profiles for the local (diffusers) backend.
+# Nothing downloads on its own: use Settings → Local models in the web app.
+# Files go to the Hugging Face cache. size_gb is a display hint only.
+
+image_profiles:
+  sdxl:
+    label: "SDXL base 1.0"
+    pipeline: sdxl
+    repo: stabilityai/stable-diffusion-xl-base-1.0
+    vae: madebyollin/sdxl-vae-fp16-fix   # avoids NaN/black images in fp16 on MPS
+    steps: 30
+    guidance: 6.5
+    native_size: 1024
+    size_gb: 7
+  flux-schnell:
+    label: "FLUX.1 schnell (slower on MPS, sharper)"
+    pipeline: flux
+    repo: black-forest-labs/FLUX.1-schnell
+    steps: 4
+    guidance: 0.0
+    native_size: 1024
+    size_gb: 34
+    gated: true   # accept the licence on Hugging Face and run `uv run huggingface-cli login`
+
+default_image_profile: sdxl
+
+# Style presets: prompt fragments, optional LoRA (SDXL only) and post-processing flags.
+styles:
+  pixel:
+    label: "Pixel art"
+    prompt: "pixel art, simple, flat colors, clean outlines"
+    negative: "blurry, smooth shading, gradient, photo, 3d render, jpeg artifacts"
+    lora:
+      repo: nerijs/pixel-art-xl
+      weight_name: pixel-art-xl.safetensors
+      scale: 1.0
+    pixelate: true
+    palette_colors: 32
+    hard_alpha: true
+  painted:
+    label: "Hand-painted"
+    prompt: "hand-painted game art, painterly, soft brush strokes, vibrant colors"
+    negative: "photo, pixelated, noisy, jpeg artifacts, text, watermark"
+    pixelate: false
+    hard_alpha: false
+  cartoon:
+    label: "Cartoon / vector"
+    prompt: "cartoon game asset, flat colors, bold clean outlines, cel shading"
+    negative: "photo, realistic, noisy, gradient mess, text, watermark"
+    pixelate: false
+    hard_alpha: false
+  realistic:
+    label: "Semi-realistic HD"
+    prompt: "highly detailed game asset, stylized realism, studio lighting"
+    negative: "blurry, low quality, text, watermark, cropped"
+    pixelate: false
+    hard_alpha: false
+
+# Image-to-video profiles for the animation step.
+video_profiles:
+  wan-ti2v-5b:
+    label: "Wan 2.2 TI2V 5B (best motion, ~3 min)"
+    pipeline: wan
+    repo: Wan-AI/Wan2.2-TI2V-5B-Diffusers
+    steps: 30
+    guidance: 5.0
+    width: 512   # 704 runs out of memory at VAE decode on 48GB unified memory
+    height: 512
+    num_frames: 33
+    fps: 24
+    size_gb: 34
+  ltx-video:
+    label: "LTX-Video (faster, weaker motion)"
+    pipeline: ltx
+    repo: Lightricks/LTX-Video
+    steps: 30
+    guidance: 3.0
+    width: 704
+    height: 704
+    num_frames: 49
+    fps: 24
+    size_gb: 28
+
+default_video_profile: wan-ti2v-5b
+
+matting:
+  repo: ZhengPeng7/BiRefNet
+  resolution: 1024
+  size_gb: 0.4

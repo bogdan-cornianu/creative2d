@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+outputs/
+data/
+web/node_modules/
+web/dist/
+.env
+secrets.env
+.DS_Store
+.playwright-mcp/
+*.tsbuildinfo
