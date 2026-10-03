@@ -175,3 +175,40 @@ def test_closest_ratio():
     assert closest_ratio(1024, 1024) == "1:1"
     assert closest_ratio(1920, 1080, ["1:1", "16:9"]) == "16:9"
     assert closest_ratio(1000, 3000, ["1:1", "16:9"]) == "1:1"
+
+
+def _balance_client(routes):
+    def handler(req):
+        status, body = routes[req.url.path.removeprefix("/api/v1")]
+        return httpx.Response(status, json=body)
+
+    return OpenRouterClient("k", transport=httpx.MockTransport(handler))
+
+
+def test_balance_from_account_credits():
+    c = _balance_client({"/credits": (200, {"data": {"total_credits": 10.0, "total_usage": 2.5}})})
+    assert c.balance() == {"source": "account", "remaining": 7.5, "total": 10.0, "used": 2.5}
+
+
+def test_balance_falls_back_to_key_limit():
+    # Inference keys may not read /credits; the key's own cap is the next best answer.
+    c = _balance_client({
+        "/credits": (403, {"error": {"code": 403, "message": "Only management keys can perform this operation"}}),
+        "/key": (200, {"data": {"limit": 20, "limit_remaining": 14.5, "usage": 5.5}}),
+    })
+    assert c.balance() == {"source": "key", "remaining": 14.5, "total": 20, "used": 5.5}
+
+
+def test_balance_unknown_without_key_limit():
+    c = _balance_client({
+        "/credits": (403, {"error": {"message": "nope"}}),
+        "/key": (200, {"data": {"limit": None, "limit_remaining": None, "usage": 3.0}}),
+    })
+    assert c.balance() == {"source": "usage", "remaining": None, "total": None, "used": 3.0}
+
+
+def test_balance_bad_key_raises():
+    c = _balance_client({"/credits": (401, {"error": {"message": "bad"}})})
+    with pytest.raises(OpenRouterError) as e:
+        c.balance()
+    assert e.value.status == 401

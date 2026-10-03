@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, Job, JobRow, JobSpec, Options, Settings } from "./api";
 import { AssetView } from "./AssetView";
+import { CreditsBadge } from "./CreditsBadge";
 import { JobForm } from "./JobForm";
 import { JobList } from "./JobList";
 import { SettingsDialog } from "./SettingsDialog";
@@ -36,6 +37,14 @@ export function App() {
     const t = setInterval(refreshJobs, 2500);
     return () => clearInterval(t);
   }, [active, refreshJobs]);
+
+  // Re-read OpenRouter credits each time the queue drains, since finished jobs may have spent some.
+  const [spendTick, setSpendTick] = useState(0);
+  const wasActive = useRef(false);
+  useEffect(() => {
+    if (wasActive.current && !active) setSpendTick((n) => n + 1);
+    wasActive.current = active;
+  }, [active]);
 
   // Selected job: fetch details, then follow live events until it finishes.
   useEffect(() => {
@@ -113,6 +122,9 @@ export function App() {
         <p className="device" title="Where local models run">
           {device && `Local models on ${device === "mps" ? "Apple GPU" : device.toUpperCase()}`}
         </p>
+        {settings?.openrouter_key_set && (
+          <CreditsBadge refreshKey={`${settings.openrouter_key_masked}:${spendTick}`} onOpenSettings={() => setSettingsOpen(true)} />
+        )}
         <button className="ghost" onClick={() => setSettingsOpen(true)}>
           Settings
         </button>

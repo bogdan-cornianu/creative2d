@@ -97,6 +97,18 @@ def create_app(
             client.close()
         return {"ok": True, "label": info.get("label"), "limit": info.get("limit"), "usage": info.get("usage")}
 
+    @app.get("/api/openrouter/credits")
+    def openrouter_credits():
+        if not settings_store.get_api_key():
+            raise HTTPException(404, "no OpenRouter key set")
+        client = OpenRouterClient(settings_store.get_api_key())
+        try:
+            return client.balance()
+        except OpenRouterError as e:
+            raise HTTPException(e.status or 502, str(e))
+        finally:
+            client.close()
+
     # ------------------------------------------------------------ local models
     @app.get("/api/local-models")
     def local_models():
