@@ -121,7 +121,7 @@ export function App() {
       <aside className="panel compose">
         <h2 className="panel-title">New asset</h2>
         {options ? (
-          <JobForm key={formKey} options={options} settings={settings} onSubmit={submit} onOpenSettings={() => setSettingsOpen(true)} />
+          <JobForm key={formKey} options={options} settings={settings} device={device} onSubmit={submit} onOpenSettings={() => setSettingsOpen(true)} />
         ) : (
           <p className="hint">Loading options…</p>
         )}

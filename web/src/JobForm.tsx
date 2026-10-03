@@ -75,17 +75,24 @@ function Num(props: {
   step?: number;
   suffix?: string;
 }) {
+  // Raw text while typing, so clearing the field does not snap it to 0.
+  const [draft, setDraft] = useState<string | null>(null);
   return (
     <label className="field num">
       <span>{props.label}</span>
       <span className="num-input">
         <input
           type="number"
-          value={props.value}
+          value={draft ?? props.value}
           min={props.min}
           max={props.max}
           step={props.step ?? 1}
-          onChange={(e) => props.onChange(Number(e.target.value))}
+          onChange={(e) => {
+            const raw = e.target.value;
+            setDraft(raw);
+            if (raw !== "" && Number.isFinite(Number(raw))) props.onChange(Number(raw));
+          }}
+          onBlur={() => setDraft(null)}
         />
         {props.suffix && <em>{props.suffix}</em>}
       </span>
@@ -105,14 +112,23 @@ function Section(props: { title: string; children: ReactNode; aside?: ReactNode 
   );
 }
 
+/** Name for "run it here", from the device the server reports. */
+function localLabel(device: string) {
+  if (device === "mps") return "This Mac";
+  if (device === "cuda") return "Local GPU";
+  if (device === "cpu") return "Local CPU";
+  return "This computer";
+}
+
 interface Props {
   options: Options;
   settings: Settings | null;
+  device: string;
   onSubmit: (spec: JobSpec) => Promise<void>;
   onOpenSettings: () => void;
 }
 
-export function JobForm({ options, settings, onSubmit, onOpenSettings }: Props) {
+export function JobForm({ options, settings, device, onSubmit, onOpenSettings }: Props) {
   const defaults: JobSpec = { prompt: "", ...options.defaults, seed: null } as JobSpec;
   const [spec, setSpec] = useState<JobSpec>(() => loadSaved(defaults));
   const [busy, setBusy] = useState(false);
@@ -276,7 +292,7 @@ export function JobForm({ options, settings, onSubmit, onOpenSettings }: Props) 
           label="Runs on"
           value={spec.backend}
           options={[
-            { value: "local", label: "This Mac" },
+            { value: "local", label: localLabel(device) },
             { value: "openrouter", label: "OpenRouter" },
           ]}
           onChange={(v) => set("backend", v)}
@@ -302,7 +318,7 @@ export function JobForm({ options, settings, onSubmit, onOpenSettings }: Props) 
           title="Animation"
           aside={
             <label className="switch">
-              <input type="checkbox" checked={spec.animate.enabled} onChange={(e) => setAnim("enabled", e.target.checked)} />
+              <input type="checkbox" aria-label="Animation" checked={spec.animate.enabled} onChange={(e) => setAnim("enabled", e.target.checked)} />
               <span>{spec.animate.enabled ? "On" : "Off"}</span>
             </label>
           }
@@ -337,7 +353,7 @@ export function JobForm({ options, settings, onSubmit, onOpenSettings }: Props) 
                 label="Video model runs on"
                 value={spec.animate.backend}
                 options={[
-                  { value: "local", label: "This Mac" },
+                  { value: "local", label: localLabel(device) },
                   { value: "openrouter", label: "OpenRouter" },
                 ]}
                 onChange={(v) => setAnim("backend", v)}
@@ -428,20 +444,23 @@ export function JobForm({ options, settings, onSubmit, onOpenSettings }: Props) 
         </label>
       </details>
 
-      {keyMissing && (
-        <p className="notice">
-          OpenRouter needs an API key.{" "}
-          <button type="button" className="link" onClick={onOpenSettings}>
-            Add your key
-          </button>
-        </p>
-      )}
-      {localMissing && <p className="notice">Local models are not installed. Run <code>uv sync --extra ml</code>, then restart the server.</p>}
-      {error && <p className="notice error">{error}</p>}
-
-      <button className="primary" type="submit" disabled={busy || !spec.prompt.trim() || keyMissing || localMissing}>
-        {busy ? "Queuing…" : "Generate"}
-      </button>
+      {/* Sticky, so whatever blocks Generate stays in view next to it. */}
+      <div className="form-footer">
+        {keyMissing && (
+          <p className="notice">
+            OpenRouter needs an API key.{" "}
+            <button type="button" className="link" onClick={onOpenSettings}>
+              Add your key
+            </button>
+          </p>
+        )}
+        {localMissing && <p className="notice">Local models are not installed. Run <code>uv sync --extra ml</code>, then restart the server.</p>}
+        {error && <p className="notice error">{error}</p>}
+        {!spec.prompt.trim() && !keyMissing && !localMissing && <p className="hint">Describe the asset above to enable Generate.</p>}
+        <button className="primary" type="submit" disabled={busy || !spec.prompt.trim() || keyMissing || localMissing}>
+          {busy ? "Queuing…" : "Generate"}
+        </button>
+      </div>
     </form>
   );
 }

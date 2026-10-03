@@ -80,8 +80,22 @@ class JobStore:
     def _row(row: sqlite3.Row, include_result: bool = True) -> dict:
         d = dict(row)
         d["spec"] = json.loads(d["spec"])
+        result = json.loads(d["result"]) if d["result"] else None
         if include_result:
-            d["result"] = json.loads(d["result"]) if d["result"] else None
+            d["result"] = result
         else:
             d.pop("result", None)
+            d["thumb"] = _thumb(result)
         return d
+
+
+def _thumb(manifest: dict | None) -> str | None:
+    """Path under the job's assets/ of one image that represents it in the job list."""
+    if not manifest:
+        return None
+    r = manifest.get("result", {})
+    if r.get("kind") == "background":
+        layers = [e["texture"] for e in r.get("entries", []) if e.get("loader") == "image" and e.get("texture")]
+        return layers[0] if layers else None
+    frames = r.get("frames") or []
+    return f"frames/{frames[0]}.png" if frames else None

@@ -68,6 +68,8 @@ export interface JobRow {
   message: string;
   spec: JobSpec;
   error?: string | null;
+  /** Image under the job's assets/ that stands for it in the list; only in list rows. */
+  thumb?: string | null;
 }
 
 export interface LoaderEntry {

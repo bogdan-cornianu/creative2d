@@ -430,18 +430,30 @@ a.button {
   border: 1px solid var(--cobalt);
 }
 
-.job-form > .primary {
-  padding: 11px;
-  font-size: 15px;
+/* Opaque bar pinned to the panel's bottom edge; negative margins cover the panel padding. */
+.form-footer {
   position: sticky;
-  bottom: 0;
+  bottom: -16px;
   z-index: 1;
-  /* Panel-colored halo so fields scrolling underneath do not show through. */
-  box-shadow: 0 0 0 12px var(--panel);
+  margin: 0 -16px -16px;
+  padding: 12px 16px 16px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
+.form-footer > .primary {
+  padding: 11px;
+  font-size: 15px;
+}
+
+/* Solid fill, not opacity: the button must stay readable over anything. */
 .primary:disabled {
-  opacity: 0.45;
+  background: var(--table);
+  border-color: var(--line);
+  color: var(--ink-soft);
   cursor: not-allowed;
 }
 
@@ -734,7 +746,7 @@ figcaption {
 .job {
   width: 100%;
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-columns: 36px minmax(0, 1fr);
   gap: 10px;
   align-items: start;
   text-align: left;
@@ -754,9 +766,14 @@ figcaption {
   background: color-mix(in srgb, var(--cobalt) 12%, var(--panel));
 }
 
+.glyph,
+.thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 3px;
+}
+
 .glyph {
-  width: 26px;
-  height: 26px;
   display: grid;
   place-items: center;
   font-size: 12px;
@@ -764,6 +781,13 @@ figcaption {
   border-radius: 3px;
   background: var(--table);
   color: var(--ink-soft);
+}
+
+.thumb {
+  display: block;
+  object-fit: contain;
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
 }
 
 .job.running .glyph,
