@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 
@@ -56,7 +57,21 @@ def _gen(args: argparse.Namespace) -> int:
     return 0
 
 
+def _drop_unwritable_keylog() -> None:
+    """ssl.create_default_context() raises if SSLKEYLOGFILE can not be opened, breaking every HTTPS call."""
+    path = os.environ.get("SSLKEYLOGFILE")
+    if not path:
+        return
+    try:
+        with open(path, "a"):
+            pass
+    except OSError as e:
+        del os.environ["SSLKEYLOGFILE"]
+        print(f"warning: ignoring SSLKEYLOGFILE ({e})", file=sys.stderr)
+
+
 def main(argv: list[str] | None = None) -> int:
+    _drop_unwritable_keylog()
     p = argparse.ArgumentParser(prog="creative2d")
     sub = p.add_subparsers(dest="cmd", required=True)
 

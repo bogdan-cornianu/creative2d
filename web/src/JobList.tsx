@@ -1,4 +1,4 @@
-import { JobRow } from "./api";
+import { assetUrl, JobRow } from "./api";
 
 const TYPE_GLYPH: Record<string, string> = { character: "C", prop: "P", tile: "T", background: "B" };
 
@@ -25,9 +25,18 @@ export function JobList({ jobs, selected, onSelect }: Props) {
       {jobs.map((j) => (
         <li key={j.id}>
           <button className={`job ${j.status} ${selected === j.id ? "on" : ""}`} onClick={() => onSelect(j.id)}>
-            <span className={`glyph ${j.spec.asset_type}`} aria-hidden>
-              {TYPE_GLYPH[j.spec.asset_type]}
-            </span>
+            {j.status === "done" && j.thumb ? (
+              <img
+                className={`thumb checker ${j.spec.style === "pixel" ? "pixelated" : ""}`}
+                src={assetUrl(j.id, j.thumb)}
+                alt=""
+                loading="lazy"
+              />
+            ) : (
+              <span className={`glyph ${j.spec.asset_type}`} aria-hidden>
+                {TYPE_GLYPH[j.spec.asset_type]}
+              </span>
+            )}
             <span className="job-text">
               <span className="job-prompt">{j.spec.prompt}</span>
               <span className="job-meta">

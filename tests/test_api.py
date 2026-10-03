@@ -47,7 +47,9 @@ def test_job_lifecycle(client):
     assert client.get(f"/outputs/{job_id}/assets/slime.png").status_code == 200
     z = client.get(f"/api/jobs/{job_id}/download")
     assert z.status_code == 200 and z.headers["content-type"] == "application/zip"
-    assert any(j["id"] == job_id for j in client.get("/api/jobs").json())
+    row = next(j for j in client.get("/api/jobs").json() if j["id"] == job_id)
+    assert row["thumb"] == "frames/slime.png"
+    assert client.get(f"/outputs/{job_id}/assets/{row['thumb']}").status_code == 200
     # SSE on a finished job returns the final snapshot and closes.
     with client.stream("GET", f"/api/jobs/{job_id}/events") as s:
         lines = [l for l in s.iter_lines() if l.startswith("data:")]
