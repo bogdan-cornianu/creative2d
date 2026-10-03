@@ -121,6 +121,14 @@ export interface Settings {
   prefs: Partial<Record<"image_model" | "text_model" | "vision_model" | "video_model", string>>;
 }
 
+/** OpenRouter credits in USD; see OpenRouterClient.balance for what each source means. */
+export interface Credits {
+  source: "account" | "key" | "usage";
+  remaining: number | null;
+  total: number | null;
+  used: number;
+}
+
 export interface ORModel {
   id: string;
   name: string;
@@ -176,6 +184,7 @@ export const api = {
   testKey: () => req<{ ok: boolean; label?: string; usage?: number; limit?: number | null }>("/api/settings/test", { method: "POST" }),
   models: (kind: ModelKind, refresh = false) =>
     req<{ models: ORModel[] }>(`/api/openrouter/models?kind=${kind}${refresh ? "&refresh=true" : ""}`).then((r) => r.models),
+  credits: () => req<Credits>("/api/openrouter/credits"),
   localModels: () => req<LocalModels>("/api/local-models"),
   downloadModels: (ids: string[]) =>
     req<{ models: LocalModel[] }>("/api/local-models/download", { method: "POST", body: JSON.stringify({ ids }) }),

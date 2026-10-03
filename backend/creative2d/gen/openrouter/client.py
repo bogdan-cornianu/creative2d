@@ -97,6 +97,27 @@ class OpenRouterClient:
         self._need_key()
         return self._request("GET", "/key", retries=0).json().get("data", {})
 
+    def balance(self) -> dict:
+        """Credits left, in USD.
+
+        source "account": account balance from /credits (needs a management key).
+        source "key": what is left under this key's own spending limit.
+        source "usage": neither is readable; only what this key has spent is known.
+        """
+        self._need_key()
+        try:
+            d = self._request("GET", "/credits", retries=0).json()["data"]
+            total, used = float(d["total_credits"]), float(d["total_usage"])
+            return {"source": "account", "remaining": round(total - used, 6), "total": total, "used": used}
+        except OpenRouterError as e:
+            if e.status != 403:
+                raise
+        info = self.key_info()
+        used = float(info.get("usage") or 0.0)
+        if info.get("limit_remaining") is not None:
+            return {"source": "key", "remaining": info["limit_remaining"], "total": info.get("limit"), "used": used}
+        return {"source": "usage", "remaining": None, "total": None, "used": used}
+
     # --- generation ---
     def generate_images(self, body: dict) -> tuple[list[Image.Image], float]:
         """POST /images. Returns decoded images and reported cost (USD)."""

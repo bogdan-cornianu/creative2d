@@ -96,3 +96,7 @@ def test_options(client):
     o = client.get("/api/options").json()
     assert "pixel" in o["styles"] and "sdxl" in o["image_profiles"]
     assert o["defaults"]["frame_size"] == 64
+
+
+def test_credits_needs_key(client):
+    assert client.get("/api/openrouter/credits").status_code == 404
