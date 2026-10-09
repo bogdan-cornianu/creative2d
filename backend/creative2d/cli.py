@@ -79,6 +79,9 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8000)
 
+    m = sub.add_parser("mcp", help="run the MCP server (stdio) for AI agents; needs `serve` running")
+    m.add_argument("--url", help="creative2d server URL (default $CREATIVE2D_URL or http://127.0.0.1:8000)")
+
     g = sub.add_parser("gen", help="generate an asset from the command line")
     g.add_argument("prompt")
     g.add_argument("--name", default="asset")
@@ -101,6 +104,11 @@ def main(argv: list[str] | None = None) -> int:
         import uvicorn
 
         uvicorn.run("creative2d.api.app:create_app", factory=True, host=args.host, port=args.port)
+        return 0
+    if args.cmd == "mcp":
+        from .mcp_server import serve
+
+        serve(args.url)
         return 0
     return _gen(args)
 

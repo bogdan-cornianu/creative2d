@@ -45,6 +45,24 @@ uv run creative2d gen "castle" --backend openrouter --model google/gemini-3.1-fl
 
 Output lands in `outputs/<job id>/`: `assets/` (what goes into your game), `raw/` (unprocessed generations) and a zip of `assets/`.
 
+## MCP server (for AI agents)
+
+`creative2d mcp` runs a stdio MCP server that drives a running `creative2d serve` over HTTP, so agents share the web UI's job queue, models and history. Start `serve` first.
+
+```sh
+claude mcp add creative2d -- uv run --directory /path/to/creative2d creative2d mcp
+```
+
+Other clients (Claude Desktop etc.):
+
+```json
+{"mcpServers": {"creative2d": {"command": "uv", "args": ["run", "--directory", "/path/to/creative2d", "creative2d", "mcp"]}}}
+```
+
+Server URL defaults to `http://127.0.0.1:8000`; override with `--url` or `CREATIVE2D_URL`.
+
+Tools: `get_options`, `health`, `list_models` (OpenRouter catalog or local profiles), `get_default_models` / `set_default_models` (image, video, text, vision; shared with the web UI), `generate_asset` (blocks until done by default; `wait=false` returns a job id), `get_job`, `list_jobs`, `cancel_job`, `get_asset_file` (PNGs come back as images). Results list absolute paths under `assets_dir`, so agents on the same machine read files straight from disk.
+
 ## Using the output in Phaser
 
 Each job writes `assets/phaser-loader.js` with the exact calls. Typical sprite job:
