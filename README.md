@@ -45,6 +45,70 @@ uv run creative2d gen "castle" --backend openrouter --model google/gemini-3.1-fl
 
 Output lands in `outputs/<job id>/`: `assets/` (what goes into your game), `raw/` (unprocessed generations) and a zip of `assets/`.
 
+## MCP server (for AI agents)
+
+`creative2d mcp` is a stdio [MCP](https://modelcontextprotocol.io) server. It lets an AI agent (Claude Code, Claude Desktop, Cursor and others) generate 2D game assets by calling tools. It does not run models itself. It forwards calls over HTTP to a running `creative2d serve`, so agents share the web app's job queue, models, settings and history. One worker runs one job at a time, so a local GPU is never used twice.
+
+### Run it
+
+1. Install and start the app (see [Setup](#setup)):
+
+   ```sh
+   uv run creative2d serve        # http://127.0.0.1:8000, keep it running
+   ```
+
+2. Register the MCP server with your agent. The agent starts `creative2d mcp` itself; you do not run it by hand.
+
+   **Claude Code**
+
+   ```sh
+   claude mcp add creative2d -- uv run --directory /path/to/creative2d creative2d mcp
+   # share it with the team through a checked-in .mcp.json instead:
+   claude mcp add --scope project creative2d -- uv run --directory /path/to/creative2d creative2d mcp
+   claude mcp list                # creative2d should show as connected
+   ```
+
+   **Claude Desktop, Cursor and other clients** take the same command in their config file:
+
+   ```json
+   {
+     "mcpServers": {
+       "creative2d": {
+         "command": "uv",
+         "args": ["run", "--directory", "/path/to/creative2d", "creative2d", "mcp"]
+       }
+     }
+   }
+   ```
+
+   Replace `/path/to/creative2d` with the absolute path of this repo.
+
+The server URL defaults to `http://127.0.0.1:8000`. Override it with `--url` or the `CREATIVE2D_URL` environment variable, for example `"env": {"CREATIVE2D_URL": "http://192.168.1.20:8000"}`. If `serve` is not running, tools fail with `creative2d server not reachable at ... Run: uv run creative2d serve`.
+
+### Tools
+
+| Tool | Purpose |
+|---|---|
+| `get_options` | Asset types, views, styles, animation actions, model profiles and defaults. Call this first. |
+| `health` | Compute device, whether local ML is installed, loaded models, running job. |
+| `list_models` | Models you can pick: the OpenRouter catalog (`kind` = image, video, text or vision, with a `query` filter) or the local profiles (`backend="local"`). |
+| `get_default_models` / `set_default_models` | Read and save the default image, video, text and vision model. Shared with the web app. Pass `""` to clear one. |
+| `generate_asset` | Create a character, prop, tile or background. Blocks until the job ends by default. `wait=false` returns a job id at once. |
+| `get_job` / `list_jobs` / `cancel_job` | Poll, browse and stop jobs. |
+| `get_asset_file` | Read one output file. PNGs come back as images the agent can look at. JSON, `.tsj` and JS come back as text. |
+
+`generate_asset` takes the same fields as the web form (`prompt`, `name`, `asset_type`, `style`, `view`, `frame_size`, `tile_size`, `directions`, `variants`, `seed`, `backend`, `image_model`, ...). Animation and export options go in the nested `animate` and `output` objects. A finished job returns `assets_dir` and a `files` list with absolute paths, so an agent on the same machine reads the files straight from disk and copies them into the game project.
+
+Saved default models apply to OpenRouter jobs. A local job uses the profile named in `image_model`, or the default profile from `models.yaml`. To override for one job, pass `image_model` or `animate={"model": ...}`.
+
+### Example prompts for the agent
+
+- "Use creative2d to make a 64 px pixel-art red slime with a walk animation, then copy the atlas and anims JSON into `assets/`."
+- "Generate a seamless 32 px mossy cobblestone tileset, 4 variants, and import the `.tsj` into my Tiled map."
+- "List the OpenRouter image models that match gemini, set the cheapest as the default, then make a painted forest background with 3 parallax layers."
+
+Tips for agents: put the subject first in the prompt, keep to one subject per image, and leave style to the `style` argument. Local generation takes about 20 s per SDXL image and about 3 min for a Wan animation, so use `wait=false` and `get_job` for long jobs.
+
 ## Using the output in Phaser
 
 Each job writes `assets/phaser-loader.js` with the exact calls. Typical sprite job:
@@ -79,6 +143,8 @@ backend/creative2d/
   post/       matting, pixel art, seamless tiles, isometric projection, trimming
   animate/    local image-to-video, frame sampling and stabilization
   pack/       MaxRects atlas, spritesheet, tile sheet, Phaser/Tiled export
+  mcp_server.py  stdio MCP server (HTTP client of the API)
+  cli.py      `serve`, `gen` and `mcp` commands
 web/          Vite + React + Phaser preview
 tests/        pytest suite (runs without a GPU using fake backends)
 ```

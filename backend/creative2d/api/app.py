@@ -55,6 +55,7 @@ def create_app(
             "ml_available": config.ml_available(),
             "loaded_models": model_cache.loaded(),
             "current_job": worker.current,
+            "output_dir": str(config.OUTPUT_DIR.resolve()),
         }
 
     @app.get("/api/options")
