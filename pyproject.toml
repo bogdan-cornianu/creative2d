@@ -50,3 +50,14 @@ packages = ["backend/creative2d"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["tests"]
+
+# CUDA wheels on Windows/Linux (PyPI's Windows torch is CPU-only). macOS keeps PyPI wheels (MPS).
+# cu130 covers Blackwell (RTX 50xx); needs NVIDIA driver 580+.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu130", marker = "sys_platform != 'darwin'" }]
+torchvision = [{ index = "pytorch-cu130", marker = "sys_platform != 'darwin'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
